@@ -13,13 +13,14 @@ import pandas as pd
 
 class JsonWriterPipeline:
 
+    def __init__(self):
+        self.items = None
+
     def open_spider(self, spider):
-        self.items = []  # Initialize an empty list to store items
+        self.items = []
 
     def close_spider(self, spider):
-        # Convert the list of items to a pandas DataFrame
         df = pd.DataFrame(self.items)
-        # Write the DataFrame to a JSON file
         df.to_json(
             "urls.json",
             orient="records",
@@ -29,11 +30,5 @@ class JsonWriterPipeline:
         )
 
     def process_item(self, item, spider):
-        # Append each item to the list
         self.items.append(dict(item))
         return item
-
-
-# class ScrapersPipeline:
-#     def process_item(self, item, spider):
-#         return item

@@ -13,6 +13,33 @@ import time
 from scrapy import Item, Field
 
 
+EXPERIENCE = {
+        "Без досвіду": 0,
+        "До 1 року": 1,
+        "Від 1 до 2 років": 164,
+        "Від 2 до 5 років": 165,
+        "Понад 5 років": 166,
+    }
+LOCATION = {
+    "Вся Україна": None,
+    "Київ": "kyiv",
+    "Львів": "lviv",
+    "Одеса": "odesa",
+    "Харків": "kharkiv",
+    "Дніпро": "dnipro",
+    "Дистанційно": "remote",
+}
+SALARY = {
+    "будь-яка": None,
+    "до 10 000 грн": 10,
+    "до 15 000 грн": 11,
+    "до 20 000 грн": 12,
+    "до 25 000 грн": 13,
+    "до 30 000 грн": 14,
+    "до 100 000 грн": 17,
+}
+
+
 class UrlItem(Item):
     url = Field()
 
@@ -23,12 +50,14 @@ class WorkUaSpider(scrapy.Spider):
     allowed_domains = ["work.ua"]
     start_urls = ["https://work.ua"]
     employer_url = "https://www.work.ua/employer/"
+    resumes_url = "https://www.work.ua/resumes"
 
     def __init__(self) -> None:
         super().__init__()
-        # position will be set with telegram bot, later
-        self.position = "Python developer"
-        self.location = "Вся Україна"
+        self.job_position = "Python developer".lower().strip()
+        self.location = LOCATION["Вся Україна"]
+        self.experience = [EXPERIENCE["Від 1 до 2 років"], EXPERIENCE["До 1 року"]]
+        self.salary = SALARY["до 30 000 грн"]
         self.options = webdriver.ChromeOptions()
         # self.options.add_argument("--headless")
         self.driver = webdriver.Chrome(options=self.options)
@@ -36,12 +65,7 @@ class WorkUaSpider(scrapy.Spider):
 
     def parse(self, response: Response, **kwargs) -> None:
         self.open_employer_page()
-        self.find_candidates_by_position(self.position, self.location)
-        WebDriverWait(self.driver, 10).until(
-            EC.presence_of_element_located(
-                (By.CSS_SELECTOR, "a[href*='/resumes/']")
-            )
-        )
+        self.find_candidates_by_filters()
 
         # Extract candidate URLs
         candidates_links = self.driver.find_elements(
@@ -52,24 +76,31 @@ class WorkUaSpider(scrapy.Spider):
             print(f"UUURL {url}")
             yield UrlItem(url=url)
 
-        # time.sleep(5)
+        time.sleep(60)
 
-    def find_candidates_by_position(
-        self, position: str, location: str
-    ) -> None:
-        position_field = self.driver.find_element(
-            By.CSS_SELECTOR, "input[placeholder='Посада']"
-        )
-        position_field.send_keys(position)
-        location_field = self.driver.find_element(
-            By.CSS_SELECTOR, "input[placeholder='Місто']"
-        )
-        location_field.send_keys(location)
+    def find_candidates_by_filters(self) -> None:
+        search_field = self.start_urls[0] + "/"
+        if self.location is not None:
+            search_field += f"resumes-{self.location}-"
+        else:
+            search_field += f"resumes-"
+        if self.job_position is not None:
+            transformed_job_position = "+".join(self.job_position.split())
+            search_field += f"{transformed_job_position}/?"
+        else:
+            raise Exception("Position is not set")
 
-        search_button = self.driver.find_element(
-            By.CSS_SELECTOR, "button[type='submit']"
-        )
-        search_button.click()
+        candidate_filter = []
+        if self.experience is not None:
+            transformed_experience = "+".join([str(x) for x in self.experience])
+            candidate_filter.append(f"experience={transformed_experience}")
+
+        if self.salary is not None:
+            candidate_filter.append(f"salaryto={SALARY['до 30 000 грн']}")
+        if candidate_filter:
+            search_field += "&".join(candidate_filter)
+
+        self.driver.get(search_field)
 
         WebDriverWait(self.driver, 10).until(
             EC.presence_of_element_located(

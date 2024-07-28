@@ -35,14 +35,15 @@ class WorkUaSpider(scrapy.Spider):
         )
 
         # Extract candidate URLs
-        candidates_links = self.driver.find_elements(By.CSS_SELECTOR,
-                                                     "a[href*='/resumes/']")
+        candidates_links = self.driver.find_elements(
+            By.CSS_SELECTOR, "div.col-md-8 h2.mt-0 a"
+        )
         for link in candidates_links:
             url = link.get_attribute("href")
             print(f"UUURL {url}")
             # yield Request(url=response.urljoin(url), callback=self.parse_candidate)
 
-        time.sleep(60)
+        time.sleep(5)
 
         self.driver.quit()
 

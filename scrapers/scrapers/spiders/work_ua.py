@@ -1,43 +1,16 @@
-from typing import Union
+import time
 
 import scrapy
-from scrapy import Spider, Request
+from scrapy import Item, Field
 from scrapy.crawler import CrawlerProcess
 from scrapy.http import Response
 from scrapy.utils.project import get_project_settings
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-import time
-from scrapy import Item, Field
+from selenium.webdriver.support.wait import WebDriverWait
 
-
-EXPERIENCE = {
-        "Без досвіду": 0,
-        "До 1 року": 1,
-        "Від 1 до 2 років": 164,
-        "Від 2 до 5 років": 165,
-        "Понад 5 років": 166,
-    }
-LOCATION = {
-    "Вся Україна": None,
-    "Київ": "kyiv",
-    "Львів": "lviv",
-    "Одеса": "odesa",
-    "Харків": "kharkiv",
-    "Дніпро": "dnipro",
-    "Дистанційно": "remote",
-}
-SALARY = {
-    "будь-яка": None,
-    "до 10 000 грн": 10,
-    "до 15 000 грн": 11,
-    "до 20 000 грн": 12,
-    "до 25 000 грн": 13,
-    "до 30 000 грн": 14,
-    "до 100 000 грн": 17,
-}
+from constants import LOCATION, EXPERIENCE, SALARY
 
 
 class UrlItem(Item):
@@ -76,7 +49,7 @@ class WorkUaSpider(scrapy.Spider):
             print(f"UUURL {url}")
             yield UrlItem(url=url)
 
-        time.sleep(60)
+        time.sleep(5)
 
     def find_candidates_by_filters(self) -> None:
         search_field = self.start_urls[0] + "/"
